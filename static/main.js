@@ -3,6 +3,9 @@
     let is_recording = false;
     // Access the permission for use
     // the microphone
+
+    let wait_div = document.getElementById('wait');
+    wait_div.style.display = "none";
     navigator.mediaDevices.getUserMedia(audioIN)
 
       // 'then()' method returns a Promise
@@ -12,8 +15,7 @@
 
         // Start record
         let start = document.getElementById('btnStart');
-
-
+        
         let mediaRecorder = new MediaRecorder(mediaStreamObj);
         // Pass the audio stream
 
@@ -30,6 +32,7 @@
             console.log("stop");
             is_recording = false;
             start.innerHTML = "start recording";
+            wait_div.style.display = "block";
           }
           
           // console.log(mediaRecorder.state);
@@ -83,14 +86,25 @@
             console.log(data)
             for (let i = 0; i<data.length; i++) {
                 
-              var node = document.createElement('li');
+              var node = document.createElement('div');
               node.appendChild(document.createTextNode(data[i]["role"] + ": " + data[i]["content"]));
-              document.querySelector('ul').appendChild(node);
+              document.getElementById('conversation').appendChild(node);
               node.classList.add("convtext");
-                
+              node.classList.add("alert");
+              if (data[i]["role"]=="user"){
+                node.classList.add("alert-success");
+                }
+              else {
+                  node.classList.add("alert-info");
+                };
+
+
               };
             var audioSource = document.getElementById("audioPlay");
+            
             audioSource.src = "/audio";
+            wait_div.style.display = "none";
+            
             })
 
           

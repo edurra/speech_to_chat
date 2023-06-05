@@ -103,6 +103,7 @@ def chat(max_messages = 7):
         session["count"] += 1
         print("post received")
         print(request)
+        
         audio_file = request.files['audio_file']
         identif = str(uuid.uuid4())
         file_path = "tmp/" + identif + ".mp3"
@@ -122,6 +123,10 @@ def chat(max_messages = 7):
             print(session["messages"])
         
         return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+        
+        #return json.dumps([{"a": "b"}])
+        
+        
         
 @app.route('/audio', methods = ['POST', 'GET'])
 def audio():
