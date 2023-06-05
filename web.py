@@ -8,6 +8,7 @@ import openai
 import azure.cognitiveservices.speech as speechsdk
 app = Flask(__name__)
 
+
 app.secret_key = os.getenv('FLASK_KEY')
 
 speech_key = os.getenv("SPEECH_KEY")
@@ -98,6 +99,7 @@ def index():
 @app.route('/chat', methods = ['POST', 'GET'])
 def chat(max_messages = 7):
     if request.method == 'POST':
+        
         session["count"] += 1
         print("post received")
         print(request)
@@ -118,8 +120,9 @@ def chat(max_messages = 7):
             print(session["messages"])
             session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
             print(session["messages"])
+        
         return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
-
+        
 @app.route('/audio', methods = ['POST', 'GET'])
 def audio():
     if request.method == 'GET':
