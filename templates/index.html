@@ -8,7 +8,7 @@
 
       </p>
 
-
+      <audio id="audioPlay" autoplay></audio>
       <ul id="conversation"></ul>
 
     </body>
@@ -90,7 +90,7 @@
           formData.append("audio_file", audioData);
 
           // Send the form data to the server.
-          fetch("/", {
+          fetch("/chat", {
             method: "POST",
             cache: "no-cache",
             body: formData
@@ -101,14 +101,15 @@
             for (let i = 0; i<data.length; i++) {
                 
               var node = document.createElement('li');
-              node.appendChild(document.createTextNode("you: " + data[i]["you"]));
-              document.querySelector('ul').appendChild(node);
-              var node = document.createElement('li');
-              node.appendChild(document.createTextNode("chat: " + data[i]["chat"]));
+              node.appendChild(document.createTextNode(data[i]["role"] + " " + data[i]["content"]));
               document.querySelector('ul').appendChild(node);
                 
               };
+            var audioSource = document.getElementById("audioPlay");
+            audioSource.src = "/audio";
             })
+
+          
 
         
         }
