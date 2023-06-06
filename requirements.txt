@@ -1,3 +1,5 @@
 openai
 flask
 azure-cognitiveservices-speech
+Authlib
+requests

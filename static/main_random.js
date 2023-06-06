@@ -144,7 +144,7 @@ function append_messages(data) {
     
 
     var node = document.createElement('span');
-    node.appendChild(document.createTextNode(data[i]["role"] + ": " + data[i]["content"]));
+    node.appendChild(document.createTextNode(data[i]["content"]));
     
     node.classList.add("convtext");
     node.classList.add("alert");
