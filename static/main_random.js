@@ -5,18 +5,51 @@
     // the microphone
 
     let wait_div = document.getElementById('wait');
-    wait_div.style.display = "none";
+    wait_div.style.display = "block";
 
     // Start record
     let start = document.getElementById('btnStart');
 
-    let audioSource = document.getElementById("audioPlay");
-    audioSource.src = "none";
+    let audioSource = document.getElementById("audioPlayRnd");
     audioSource.addEventListener("ended", function(){
      audioSource.currentTime = 0;
      start.style.display="block";
      console.log("ended audio");
     });
+
+    fetch("/random", {
+        method: "POST",
+        cache: "no-cache"
+      }).then(resp => resp.json()).then(data=>{ 
+
+        conversation = document.getElementById("conversation");
+        console.log(data)
+        audioSource.src = "/audio_random";
+        audioSource.play();
+        for (let i = 0; i<data.length; i++) {
+            
+          var node = document.createElement('div');
+          node.appendChild(document.createTextNode(data[i]["role"] + ": " + data[i]["content"]));
+          document.getElementById('conversation').appendChild(node);
+          node.classList.add("convtext");
+          node.classList.add("alert");
+          if (data[i]["role"]=="user"){
+            node.classList.add("alert-success");
+            }
+          else {
+              node.classList.add("alert-info");
+            };
+
+
+          };
+        
+        
+        
+        wait_div.style.display = "none";
+        
+        });
+
+    
 
     navigator.mediaDevices.getUserMedia(audioIN)
 
@@ -52,6 +85,8 @@
         // it to the chunk array
                 // Chunk array to store the audio data
         let dataArray = [];
+
+
 
         mediaRecorder.ondataavailable = function (ev) {
           dataArray.push(ev.data);
@@ -109,8 +144,8 @@
 
               };
             
-            
-            audioSource.src = "/audio";
+            audioSource.src = "/audio_random";
+            audioSource.play();
             wait_div.style.display = "none";
             
             })
@@ -125,3 +160,4 @@
       .catch(function (err) {
         console.log(err.name, err.message);
       });
+
