@@ -11,7 +11,7 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	width: 30%;
+	width: 90%;
 	flex-direction: column-reverse;
 }
 
@@ -30,4 +30,20 @@
 	align-self: center;
 	flex-direction: column;
 	margin-top: 2%;
+}
+
+.container {
+	width: 40%;
+}
+
+.logo {
+	width: 6%;
+	float:left;
+	margin-right: 2%;
+}
+
+.user {
+	width: 6%;
+	float:right;
+	margin-left: 2%;
 }

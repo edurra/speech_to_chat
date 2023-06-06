@@ -11,7 +11,6 @@
     let start = document.getElementById('btnStart');
 
     let audioSource = document.getElementById("audioPlay");
-    audioSource.src = "none";
     audioSource.addEventListener("ended", function(){
      audioSource.currentTime = 0;
      start.style.display="block";
@@ -92,22 +91,7 @@
 
             conversation = document.getElementById("conversation");
             console.log(data)
-            for (let i = 0; i<data.length; i++) {
-                
-              var node = document.createElement('div');
-              node.appendChild(document.createTextNode(data[i]["role"] + ": " + data[i]["content"]));
-              document.getElementById('conversation').appendChild(node);
-              node.classList.add("convtext");
-              node.classList.add("alert");
-              if (data[i]["role"]=="user"){
-                node.classList.add("alert-success");
-                }
-              else {
-                  node.classList.add("alert-info");
-                };
-
-
-              };
+            append_messages(data);
             
             
             audioSource.src = "/audio";
@@ -125,3 +109,34 @@
       .catch(function (err) {
         console.log(err.name, err.message);
       });
+
+  function append_messages(data) {
+  for (let i = 0; i<data.length; i++) {
+    var container = document.createElement('div');
+    container.classList.add("container");
+    document.getElementById('conversation').appendChild(container);
+
+    var nodeimg = document.createElement('img');
+    nodeimg.src = "/static/images/logo.jpeg";
+    
+    
+
+    var node = document.createElement('span');
+    node.appendChild(document.createTextNode(data[i]["role"] + ": " + data[i]["content"]));
+    
+    node.classList.add("convtext");
+    node.classList.add("alert");
+    if (data[i]["role"]=="user"){
+      node.classList.add("alert-success");
+      nodeimg.src = "/static/images/user.png";
+      nodeimg.classList.add("user");
+      }
+    else {
+        node.classList.add("alert-info");
+        nodeimg.src = "/static/images/logo.jpeg";
+        nodeimg.classList.add("logo");
+      };
+    container.appendChild(nodeimg);
+    container.appendChild(node);
+  };
+}

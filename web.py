@@ -151,7 +151,8 @@ def random():
 
         
         return json.dumps(session["messages"])
-
+        
+        #return [{"a":"b"}]
     if request.method == 'GET':
         
         session["messages"] = []
