@@ -8,6 +8,7 @@ import openai
 import azure.cognitiveservices.speech as speechsdk
 app = Flask(__name__)
 
+
 app.secret_key = os.getenv('FLASK_KEY')
 
 speech_key = os.getenv("SPEECH_KEY")
@@ -34,7 +35,7 @@ def speech_recognize_once_from_file(filename):
     # Check the result
     text = None
     if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        print("Recognized: {}".format(result.text))
+        #print("Recognized: {}".format(result.text))
         text = result.text
     elif result.reason == speechsdk.ResultReason.NoMatch:
         print("No speech could be recognized: {}".format(result.no_match_details))
@@ -65,6 +66,19 @@ def text_to_audio(path, text):
             if cancellation_details.error_details:
                 print("Error details: {}".format(cancellation_details.error_details))
                 print("Did you set the speech resource key and region values?")
+
+def random_topic():
+    initial_message =  f"This is a conversation about a random casual topic. You are the one that will suggest the topic to discuss about."
+    messages = [
+        {"role": "system",
+         "content": initial_message},
+        {"role": "user",
+         "content": f"Hi! which topic do you want to discuss about?"}
+    ]
+    
+    interviewer = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1.4)
+    interviewer_message = interviewer['choices'][0]['message']['content']
+    return interviewer_message
 
 
 def free_talk(session_messages):
@@ -98,9 +112,11 @@ def index():
 @app.route('/chat', methods = ['POST', 'GET'])
 def chat(max_messages = 7):
     if request.method == 'POST':
+        
         session["count"] += 1
         print("post received")
         print(request)
+        
         audio_file = request.files['audio_file']
         identif = str(uuid.uuid4())
         file_path = "tmp/" + identif + ".mp3"
@@ -118,14 +134,40 @@ def chat(max_messages = 7):
             print(session["messages"])
             session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
             print(session["messages"])
+        
         return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+        
+        #return json.dumps([{"a": "b"}])
 
+@app.route('/random', methods = ['POST', 'GET'])
+def random():
+    if request.method == 'POST':
+        
+        session["count"] += 1
+        print("get received")
+        print(request)
+        assistant_message = random_topic()
+        session["messages"].append({"role": "assistant", "content": assistant_message})
+
+        
+        return json.dumps(session["messages"])
+        
+        #return [{"a":"b"}]
+    if request.method == 'GET':
+        
+        session["messages"] = []
+        session["count"] = 0
+        return render_template('random.html', title='Welcome')
+                
+
+        
 @app.route('/audio', methods = ['POST', 'GET'])
+@app.route('/audio_random', methods = ['POST', 'GET'])
 def audio():
     if request.method == 'GET':
         print("get received")
         print(request)
-        print(session["messages"])
+        #print(session["messages"])
         text = session["messages"][len(session["messages"])-1]["content"]
         identif = str(uuid.uuid4())
         file_path = "tmp/" + identif + ".wav"
