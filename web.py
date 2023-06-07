@@ -46,7 +46,7 @@ def speech_recognize_once_from_file(filename):
     audio_config = speechsdk.audio.AudioConfig(filename=filename)
     # Creates a speech recognizer using a file as audio input, also specify the speech language
     speech_recognizer = speechsdk.SpeechRecognizer(
-        speech_config=speech_config, language="en-us", audio_config=audio_config)
+        speech_config=speech_config, language="en-US", audio_config=audio_config)
     # Starts speech recognition, and returns after a single utterance is recognized. The end of a
     # single utterance is determined by listening for silence at the end or until a maximum of 15
     # seconds of audio is processed. It returns the recognition text as result.
@@ -75,6 +75,9 @@ def text_to_audio(path, text):
     # The language of the voice that speaks.
     speech_config.speech_synthesis_voice_name="en-US-JennyNeural"
     speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    
+    #ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="es-ES"><voice name="es-ES-DarioNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
+
     ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US"><voice name="en-US-JennyNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
     speech_synthesis_result = speech_synthesizer.speak_ssml_async(ssml_text).get()
     #speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
@@ -145,13 +148,13 @@ def validate_token(token):
             return False
 
 
-@app.route('/', methods = ['POST', 'GET'])
+@app.route('/free', methods = ['POST', 'GET'])
 @login_required
 def index():
     if request.method == 'GET':
         session["messages"] = []
         session["count"] = 0
-        return render_template('index.html', title='Welcome')
+        return render_template('index.html', title='Welcome', username=session["google_token"]["userinfo"]["given_name"])
 
 @app.route('/chat', methods = ['POST', 'GET'])
 @login_required
@@ -203,9 +206,10 @@ def random():
         
         session["messages"] = []
         session["count"] = 0
-        return render_template('random.html', title='Welcome')
+        return render_template('random.html', title='Welcome', username=session["google_token"]["userinfo"]["given_name"])
 
 @app.route('/home', methods = ['POST', 'GET'])
+@app.route('/', methods = ['POST', 'GET'])
 def home():
 
     if request.method == 'GET':
@@ -263,7 +267,7 @@ def google_auth():
     #print(" Google User ", user)
     #print(oauth.google.get(token))
     session['google_token'] = token
-    return redirect('/')
+    return redirect('/free')
 
 if __name__ == "__main__":
     app.run(port=8000, host="0.0.0.0")

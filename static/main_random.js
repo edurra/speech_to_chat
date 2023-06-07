@@ -52,6 +52,8 @@
             console.log("start");
             is_recording = true;
             start.innerHTML = "stop recording";
+            start.classList.remove("btn-success");
+            start.classList.add("btn-warning");
           }
           else {
             mediaRecorder.stop();
@@ -60,6 +62,8 @@
             start.innerHTML = "start recording";
             wait_div.style.display = "block";
             start.style.display="none";
+            start.classList.remove("btn-warning");
+            start.classList.add("btn-success");
           }
           
           // console.log(mediaRecorder.state);
@@ -135,7 +139,7 @@
 function append_messages(data) {
   for (let i = 0; i<data.length; i++) {
     var container = document.createElement('div');
-    container.classList.add("container");
+    container.classList.add("containerconv");
     document.getElementById('conversation').appendChild(container);
 
     var nodeimg = document.createElement('img');
