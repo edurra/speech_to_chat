@@ -1,21 +1,43 @@
-from flask import render_template, request
-from flask import Flask, session, Response
+from flask import render_template, request, redirect
+from flask import Flask, session, Response, url_for
 import json
 import os
 import uuid
+import requests
 import subprocess
 import openai
 import azure.cognitiveservices.speech as speechsdk
+from authlib.integrations.flask_client import OAuth
+from functools import wraps
+
+
 app = Flask(__name__)
+oauth = OAuth(app)
 
 
-app.secret_key = os.getenv('FLASK_KEY')
+app.secret_key = str(uuid.uuid4())
 
 speech_key = os.getenv("SPEECH_KEY")
 
 openai_key = os.getenv('OPENAI_KEY')
 
+google_id = os.getenv('GOOGLE_ID')
+
+google_secret = os.getenv('GOOGLE_SECRET')
+
 openai.api_key = openai_key
+
+CONF_URL = 'https://accounts.google.com/.well-known/openid-configuration'
+oauth.register(
+    name='google',
+    client_id=google_id,
+    client_secret=google_secret,
+    server_metadata_url=CONF_URL,
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
+
 
 def speech_recognize_once_from_file(filename):
     """performs one-shot speech recognition with input from an audio file"""
@@ -24,7 +46,7 @@ def speech_recognize_once_from_file(filename):
     audio_config = speechsdk.audio.AudioConfig(filename=filename)
     # Creates a speech recognizer using a file as audio input, also specify the speech language
     speech_recognizer = speechsdk.SpeechRecognizer(
-        speech_config=speech_config, language="en-us", audio_config=audio_config)
+        speech_config=speech_config, language="en-US", audio_config=audio_config)
     # Starts speech recognition, and returns after a single utterance is recognized. The end of a
     # single utterance is determined by listening for silence at the end or until a maximum of 15
     # seconds of audio is processed. It returns the recognition text as result.
@@ -53,6 +75,9 @@ def text_to_audio(path, text):
     # The language of the voice that speaks.
     speech_config.speech_synthesis_voice_name="en-US-JennyNeural"
     speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    
+    #ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="es-ES"><voice name="es-ES-DarioNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
+
     ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US"><voice name="en-US-JennyNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
     speech_synthesis_result = speech_synthesizer.speak_ssml_async(ssml_text).get()
     #speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
@@ -102,14 +127,37 @@ def free_talk(session_messages):
         messages = [messages[0]] + messages[len(messages) - max_messages + 1:len(messages)]
     """
 
-@app.route('/', methods = ['POST', 'GET'])
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("google_token") is None or not validate_token(session.get("google_token").get("access_token")):
+            return redirect(url_for('home', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def validate_token(token):
+    if token == None:
+        return False
+    else:
+        r = requests.get(CONF_URL)
+        userinfo_endpoint = r.json()["userinfo_endpoint"]
+        user_req = requests.get(userinfo_endpoint, headers = {"Authorization": "Bearer " + token})
+        if user_req.status_code == 200:
+            return True
+        else:
+            return False
+
+
+@app.route('/free', methods = ['POST', 'GET'])
+@login_required
 def index():
     if request.method == 'GET':
         session["messages"] = []
         session["count"] = 0
-        return render_template('index.html', title='Welcome')
+        return render_template('index.html', title='Welcome', username=session["google_token"]["userinfo"]["given_name"])
 
 @app.route('/chat', methods = ['POST', 'GET'])
+@login_required
 def chat(max_messages = 7):
     if request.method == 'POST':
         
@@ -140,6 +188,7 @@ def chat(max_messages = 7):
         #return json.dumps([{"a": "b"}])
 
 @app.route('/random', methods = ['POST', 'GET'])
+@login_required
 def random():
     if request.method == 'POST':
         
@@ -157,12 +206,20 @@ def random():
         
         session["messages"] = []
         session["count"] = 0
-        return render_template('random.html', title='Welcome')
-                
+        return render_template('random.html', title='Welcome', username=session["google_token"]["userinfo"]["given_name"])
+
+@app.route('/home', methods = ['POST', 'GET'])
+@app.route('/', methods = ['POST', 'GET'])
+def home():
+
+    if request.method == 'GET':
+        
+        return render_template('home.html', title='Welcome')                
 
         
 @app.route('/audio', methods = ['POST', 'GET'])
 @app.route('/audio_random', methods = ['POST', 'GET'])
+@login_required
 def audio():
     if request.method == 'GET':
         print("get received")
@@ -188,6 +245,29 @@ def generate(path):
 
     os.remove(path)
 
+
+@app.route('/login/')
+def google():
+
+    # Redirect to google_auth function
+    redirect_uri = url_for('google_auth', _external=True)
+    print(redirect_uri)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/logout/')
+def logout():
+
+    session.pop("google_token", None)
+    return redirect(url_for("home"))
+
+@app.route('/login/callback')
+def google_auth():
+    token = oauth.google.authorize_access_token()
+    user = token["userinfo"]
+    #print(" Google User ", user)
+    #print(oauth.google.get(token))
+    session['google_token'] = token
+    return redirect('/free')
 
 if __name__ == "__main__":
     app.run(port=8000, host="0.0.0.0")
