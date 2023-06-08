@@ -68,7 +68,7 @@ def text_to_audio(path, text):
 OPENAI FUNCTIONS
 """
 def random_topic():
-    initial_message =  f"This is a conversation about a random casual topic. You are the one that will suggest the topic to discuss about."
+    initial_message =  f"This is a conversation about a random topic. You are the one that will suggest the topic to discuss about."
     messages = [
         {"role": "system",
          "content": initial_message},
