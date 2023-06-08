@@ -18,13 +18,13 @@
      console.log("ended audio");
     });
 
-    fetch("/random", {
+    fetch("/debate_init", {
         method: "POST",
         cache: "no-cache"
       }).then(resp => resp.json()).then(data=>{ 
 
         console.log(data)
-        audioSource.src = "/audio_random";
+        audioSource.src = "/audio_debate";
         audioSource.play();
         append_messages(data);
 
@@ -81,7 +81,7 @@
           formData.append("audio_file", audioData);
 
           // Send the form data to the server.
-          fetch("/chat", {
+          fetch("/debate", {
             method: "POST",
             cache: "no-cache",
             body: formData
@@ -91,7 +91,7 @@
             console.log(data)
             append_messages(data);
             
-            audioSource.src = "/audio_random";
+            audioSource.src = "/audio_debate";
             audioSource.play();
             wait_div.style.display = "none";
             
