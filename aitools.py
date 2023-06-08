@@ -102,13 +102,14 @@ def free_talk(session_messages):
         messages = [messages[0]] + messages[len(messages) - max_messages + 1:len(messages)]
     """
 
-def job_interview(position, session_messages, max_messages = 5):
+def job_interview(position, session_messages):
     messages = [
         {"role": "system", "content": f"This is job interview about a {position} job position. You are the interviewer."},
         {"role": "assistant", "content": f"welcome to the job interview for the {position} job position, let's start"},
         {"role": "user", "content": f"hi, nice to meet you, let's start with the interview"}
     ]
-    messages = messages + session_messages
+    if len(session_messages) > 0:
+        messages = [messages[0]] + session_messages
     interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
     interviewer_message = interviewer['choices'][0]['message']['content']
     return interviewer_message
@@ -116,3 +117,15 @@ def job_interview(position, session_messages, max_messages = 5):
     if len(messages) > max_messages:
         messages = [messages[0]] + messages[len(messages)-max_messages+1:len(messages)]
     """
+
+def debate(session_messages):
+    messages = [
+        {"role": "system", "content": f"This is a debate between you an the user. You have to suggest the topic, prefereable a controversial one. You have to disagree with the user."},
+        {"role": "assistant", "content": f"welcome to the debate, let's start"},
+        {"role": "user", "content": f"what topic do you want to debate about?"}
+    ]
+    if len(session_messages) > 0:
+        messages = [messages[0]] + session_messages
+    interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
+    interviewer_message = interviewer['choices'][0]['message']['content']
+    return interviewer_message

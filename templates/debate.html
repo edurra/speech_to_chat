@@ -1,0 +1,21 @@
+<html>
+    {% include "header.html" %}
+    
+    <body>
+      <div class="btn_div">
+        <button id="btnStart" class="btn btn-success" style="display:none">start recording</button>
+        <div class="spinner-border text-primary" role="status" id="wait">
+          
+        </div>
+      </div>
+      <div id="conversation"></div>
+      <audio id="audioPlayRnd" ></audio>
+      
+
+    </body>
+
+     <script type="module" src="{{url_for('static', filename='main_debate.js')}}"></script>
+
+
+  </script>
+</html>

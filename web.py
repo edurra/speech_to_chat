@@ -127,6 +127,45 @@ def random():
         session["count"] = 0
         return render_template('random.html', title='Welcome', mode="Random Topic Mode", username=session["google_token"]["userinfo"]["given_name"])
 
+@app.route('/debate', methods = ['POST', 'GET'])
+@app.route('/debate_init', methods = ['POST', 'GET'])
+@login_required
+def debate(max_messages=7):
+    if request.method == 'POST':
+        if request.path == "/debate_init":
+            session["count"] += 1
+
+            assistant_message = aitools.debate(session["messages"])
+            session["messages"].append({"role": "assistant", "content": assistant_message})
+            return json.dumps(session["messages"])
+        
+
+        if request.path == "/debate":
+            session["count"] += 1
+            audio_file = request.files['audio_file']
+            identif = str(uuid.uuid4())
+            file_path = "tmp/" + identif + ".mp3"
+            audio_file.save(file_path)
+            file_path_wav = "tmp/" + identif + ".wav"
+            subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            text = aitools.speech_recognize_once_from_file(file_path_wav)
+            os.remove(file_path)
+            os.remove(file_path_wav)
+            session["messages"].append({"role": "user", "content": text})
+            assistant_response = aitools.debate(session["messages"])
+            session["messages"].append({"role": "assistant", "content": assistant_response})
+            print(session["messages"])
+            if len(session["messages"]) > max_messages:
+                session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
+        
+            return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+        #return [{"a":"b"}]
+    if request.method == 'GET':
+        
+        session["messages"] = []
+        session["count"] = 0
+        return render_template('debate.html', title='Welcome', mode="Debate Mode", username=session["google_token"]["userinfo"]["given_name"])
+
 @app.route('/job_interview', methods = ['POST', 'GET'])
 @app.route('/job_interview_init', methods = ['POST', 'GET'])
 @login_required
@@ -172,7 +211,7 @@ def job_interview(max_messages=7):
             if len(session["messages"]) > max_messages:
                 session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
         
-        return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+            return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
 
     if request.method == 'GET':
         session["job_position"] = ""
@@ -193,6 +232,7 @@ def home():
 @app.route('/audio', methods = ['POST', 'GET'])
 @app.route('/audio_random', methods = ['POST', 'GET'])
 @app.route('/audio_job', methods = ['POST', 'GET'])
+@app.route('/audio_debate', methods = ['POST', 'GET'])
 @login_required
 def audio():
     if request.method == 'GET':
