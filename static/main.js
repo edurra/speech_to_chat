@@ -1,4 +1,4 @@
-    import { append_messages, config_mediarecorder } from './funcs.js';
+    import { append_messages, config_mediarecorder, update_tokens } from './funcs.js';
     let audioIN = { audio: true };
     //  audio is true, for recording
     let is_recording = false;
@@ -17,6 +17,8 @@
      start.style.display="block";
      console.log("ended audio");
     });
+
+    update_tokens();
 
     navigator.mediaDevices.getUserMedia(audioIN)
 
@@ -37,6 +39,7 @@
         mediaRecorder.ondataavailable = function (ev) {
           dataArray.push(ev.data);
           console.log("dataArray push");
+          update_tokens();
           //console.log(dataArray);
         }
 
@@ -80,9 +83,6 @@
             wait_div.style.display = "none";
             
             })
-
-          
-
         
         }
       })

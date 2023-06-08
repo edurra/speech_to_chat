@@ -1,4 +1,4 @@
-export {append_messages, config_mediarecorder};
+export {append_messages, config_mediarecorder, update_tokens};
 
 function append_messages(data) {
   for (let i = 0; i<data.length; i++) {
@@ -58,4 +58,18 @@ function config_mediarecorder(start, mediaRecorder, wait_div, is_recording) {
     
     // console.log(mediaRecorder.state);
   });
+}
+
+function update_tokens() {
+  fetch("/n_tokens", {
+              method: "GET",
+              cache: "no-cache"
+            }).then(resp => resp.json()).then(data=>{ 
+
+              // conversation = document.getElementById("conversation");
+              console.log(data)
+              let tokens_a = document.getElementById("ntokens");
+              tokens_a.innerText = data["tokens"];
+              
+              })
 }

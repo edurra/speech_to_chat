@@ -6,6 +6,7 @@ import uuid
 import requests
 import subprocess
 import aitools
+import dbutils
 
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
@@ -66,6 +67,8 @@ def generate(path):
 
     os.remove(path)
 
+
+
 """
 ROUTES
 """
@@ -97,7 +100,10 @@ def chat(max_messages = 7):
         os.remove(file_path)
         os.remove(file_path_wav)
         session["messages"].append({"role": "user", "content": text})
-        assistant_response = aitools.free_talk(session["messages"])
+
+        assistant_response, used_tokens = aitools.free_talk(session["messages"])
+        dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
+
         session["messages"].append({"role": "assistant", "content": assistant_response})
 
         if len(session["messages"]) > max_messages:
@@ -250,13 +256,20 @@ def audio():
         return response
 
 
+@app.route('/n_tokens',methods = ['POST', 'GET'])
+def n_tokens():
+    if request.method == 'GET':
+        current_tokens = dbutils.get_tokens(session["google_token"]["userinfo"]["email"])
+
+        return {"tokens": current_tokens}
+
 
 @app.route('/login/')
 def google():
 
     # Redirect to google_auth function
     redirect_uri = url_for('google_auth', _external=True)
-    print(redirect_uri)
+
     return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route('/logout/')
@@ -272,6 +285,10 @@ def google_auth():
     #print(" Google User ", user)
     #print(oauth.google.get(token))
     session['google_token'] = token
+
+    
+    dbutils.login_user(token["userinfo"]["email"])
+
     return redirect('/free')
 
 if __name__ == "__main__":

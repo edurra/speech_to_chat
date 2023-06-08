@@ -1,12 +1,25 @@
-
 import openai
 import azure.cognitiveservices.speech as speechsdk
 import os
+
+import tiktoken
+
+encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 speech_key = os.getenv("SPEECH_KEY")
 
 openai_key = os.getenv('OPENAI_KEY')
 openai.api_key = openai_key
+
+"""
+HELPERS
+"""
+def count_tokens(messages):
+    n = 0
+    for message in messages:
+        text = message["content"]
+        n += len(encoding.encode(text))
+    return n
 
 """
 AZURE FUNCTIONS
@@ -42,6 +55,7 @@ def speech_recognize_once_from_file(filename):
     return text
 
 def text_to_audio(path, text):
+
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioOutputConfig(filename=path)
     # The language of the voice that speaks.
@@ -94,8 +108,11 @@ def free_talk(session_messages):
     messages = messages + session_messages
     assisstant = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=120, temperature = 1)
     assisstant_message = assisstant['choices'][0]['message']['content']
+
+    messages += [{"role": "assistant", "content": assisstant_message}]
+    n_tokens = count_tokens(messages)
     
-    return assisstant_message
+    return assisstant_message, n_tokens
     """
     messages.append({"role": "assistant", "content": interviewer_message})
     if len(messages) > max_messages:
