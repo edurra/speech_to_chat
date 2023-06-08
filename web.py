@@ -130,7 +130,7 @@ def random():
 @app.route('/job_interview', methods = ['POST', 'GET'])
 @app.route('/job_interview_init', methods = ['POST', 'GET'])
 @login_required
-def job_interview():
+def job_interview(max_messages=7):
     if request.method == 'POST':
         """
         session["count"] += 1

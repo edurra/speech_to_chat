@@ -1,3 +1,4 @@
+    import { append_messages } from './funcs.js';
     let audioIN = { audio: true };
     //  audio is true, for recording
     let is_recording = false;
@@ -34,7 +35,6 @@
         body: JSON.stringify(data),
       }).then(resp => resp.json()).then(data=>{ 
 
-        conversation = document.getElementById("conversation");
         console.log(data)
         
         audioSource.src = "/audio_job";
@@ -126,7 +126,7 @@
             body: formData
           }).then(resp => resp.json()).then(data=>{ 
 
-            conversation = document.getElementById("conversation");
+            //conversation = document.getElementById("conversation");
             console.log(data)
             append_messages(data);
             
@@ -143,35 +143,4 @@
       .catch(function (err) {
         console.log(err.name, err.message);
       });
-
-function append_messages(data) {
-  for (let i = 0; i<data.length; i++) {
-    var container = document.createElement('div');
-    container.classList.add("containerconv");
-    document.getElementById('conversation').appendChild(container);
-
-    var nodeimg = document.createElement('img');
-    nodeimg.src = "/static/images/logo.jpeg";
-    
-    
-
-    var node = document.createElement('span');
-    node.appendChild(document.createTextNode(data[i]["content"]));
-    
-    node.classList.add("convtext");
-    node.classList.add("alert");
-    if (data[i]["role"]=="user"){
-      node.classList.add("alert-success");
-      nodeimg.src = "/static/images/user.png";
-      nodeimg.classList.add("user");
-      }
-    else {
-        node.classList.add("alert-info");
-        nodeimg.src = "/static/images/logo.jpeg";
-        nodeimg.classList.add("logo");
-      };
-    container.appendChild(nodeimg);
-    container.appendChild(node);
-  };
-}
 
