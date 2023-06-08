@@ -18,7 +18,7 @@
      console.log("ended audio");
     });
 
-    update_tokens();
+    
 
     navigator.mediaDevices.getUserMedia(audioIN)
 
@@ -39,7 +39,6 @@
         mediaRecorder.ondataavailable = function (ev) {
           dataArray.push(ev.data);
           console.log("dataArray push");
-          update_tokens();
           //console.log(dataArray);
         }
 

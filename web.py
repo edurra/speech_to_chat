@@ -96,7 +96,8 @@ def chat(max_messages = 7):
         audio_file.save(file_path)
         file_path_wav = "tmp/" + identif + ".wav"
         subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        text = aitools.speech_recognize_once_from_file(file_path_wav)
+        text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+        dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
         os.remove(file_path)
         os.remove(file_path_wav)
         session["messages"].append({"role": "user", "content": text})
@@ -120,7 +121,8 @@ def random():
         
         session["count"] += 1
 
-        assistant_message = aitools.random_topic()
+        assistant_message, used_tokens = aitools.random_topic()
+        dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
         session["messages"].append({"role": "assistant", "content": assistant_message})
 
         
@@ -141,7 +143,8 @@ def debate(max_messages=7):
         if request.path == "/debate_init":
             session["count"] += 1
 
-            assistant_message = aitools.debate(session["messages"])
+            assistant_message, used_tokens= aitools.debate(session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_message})
             return json.dumps(session["messages"])
         
@@ -154,11 +157,13 @@ def debate(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
             os.remove(file_path)
             os.remove(file_path_wav)
             session["messages"].append({"role": "user", "content": text})
-            assistant_response = aitools.debate(session["messages"])
+            assistant_response, used_tokens = aitools.debate(session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_response})
             print(session["messages"])
             if len(session["messages"]) > max_messages:
@@ -192,7 +197,8 @@ def job_interview(max_messages=7):
             session["job_position"] = job_position
             session["count"] += 1
 
-            interviewer_message = aitools.job_interview(job_position, session["messages"])
+            interviewer_message, used_tokens = aitools.job_interview(job_position, session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": interviewer_message})
             return json.dumps(session["messages"])
         
@@ -207,11 +213,14 @@ def job_interview(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
+
             os.remove(file_path)
             os.remove(file_path_wav)
             session["messages"].append({"role": "user", "content": text})
-            assistant_response = aitools.job_interview(session["job_position"], session["messages"])
+            assistant_response, used_tokens = aitools.job_interview(session["job_position"], session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_response})
 
             if len(session["messages"]) > max_messages:
@@ -249,19 +258,37 @@ def audio():
         identif = str(uuid.uuid4())
         file_path = "tmp/" + identif + ".wav"
         #file_path = "tmp/test2.wav"
-        aitools.text_to_audio(file_path, text)
+        duration = aitools.text_to_audio(file_path, text)
+        dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
 
         response = Response(generate(file_path), mimetype="audio/x-wav")
         
         return response
 
 
-@app.route('/n_tokens',methods = ['POST', 'GET'])
+@app.route('/profile',methods = ['GET'])
+@login_required
+def profile():
+    if request.method == 'GET':
+        current_tokens = dbutils.get_tokens(session["google_token"]["userinfo"]["email"])
+        current_sec = dbutils.get_seconds(session["google_token"]["userinfo"]["email"])
+        return render_template('profile.html', title='Welcome', tokens=current_tokens, seconds=current_sec, username=session["google_token"]["userinfo"]["given_name"])  
+
+@app.route('/tokens_consumed',methods = ['GET'])
+@login_required
 def n_tokens():
     if request.method == 'GET':
         current_tokens = dbutils.get_tokens(session["google_token"]["userinfo"]["email"])
 
         return {"tokens": current_tokens}
+
+@app.route('/time_consumed',methods = ['GET'])
+@login_required
+def n_seconds():
+    if request.method == 'GET':
+        current_sec = dbutils.get_seconds(session["google_token"]["userinfo"]["email"])
+
+        return {"tokens": current_sec}
 
 
 @app.route('/login/')

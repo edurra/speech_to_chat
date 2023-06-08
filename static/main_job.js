@@ -1,4 +1,4 @@
-    import { append_messages, config_mediarecorder} from './funcs.js';
+    import { append_messages, config_mediarecorder, update_tokens}  from './funcs.js';
     let audioIN = { audio: true };
     //  audio is true, for recording
     let is_recording = false;
@@ -17,6 +17,7 @@
      start.style.display="block";
      console.log("ended audio");
     });
+
 
     let job_div = document.getElementById("jobdiv");
     let job_button = document.getElementById("jobbnt");

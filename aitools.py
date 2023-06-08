@@ -1,6 +1,7 @@
 import openai
 import azure.cognitiveservices.speech as speechsdk
 import os
+import utils
 
 import tiktoken
 
@@ -41,6 +42,7 @@ def speech_recognize_once_from_file(filename):
     result = speech_recognizer.recognize_once()
     # Check the result
     text = None
+    duration = utils.get_wav_duration(filename)
     if result.reason == speechsdk.ResultReason.RecognizedSpeech:
         #print("Recognized: {}".format(result.text))
         text = result.text
@@ -52,7 +54,7 @@ def speech_recognize_once_from_file(filename):
         if cancellation_details.reason == speechsdk.CancellationReason.Error:
             print("Error details: {}".format(cancellation_details.error_details))
     # </SpeechRecognitionWithFile>
-    return text
+    return text, duration
 
 def text_to_audio(path, text):
 
@@ -69,7 +71,8 @@ def text_to_audio(path, text):
     #speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
     if speech_synthesis_result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         #print("Speech synthesized for text [{}]".format(text))
-        pass
+        duration = utils.get_wav_duration(path)
+        return duration
     elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
         cancellation_details = speech_synthesis_result.cancellation_details
         print("Speech synthesis canceled: {}".format(cancellation_details.reason))
@@ -92,7 +95,11 @@ def random_topic():
     
     interviewer = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1.4)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = count_tokens(messages)
+
+    return interviewer_message, n_tokens
 
 
 def free_talk(session_messages):
@@ -129,7 +136,9 @@ def job_interview(position, session_messages):
         messages = [messages[0]] + session_messages
     interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = count_tokens(messages)
+    return interviewer_message, n_tokens
     """
     if len(messages) > max_messages:
         messages = [messages[0]] + messages[len(messages)-max_messages+1:len(messages)]
@@ -145,4 +154,8 @@ def debate(session_messages):
         messages = [messages[0]] + session_messages
     interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = count_tokens(messages)
+
+    return interviewer_message, n_tokens

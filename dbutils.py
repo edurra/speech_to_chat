@@ -17,7 +17,7 @@ def login_user(email):
     cursor.execute(query, (email,))
 
     if len(cursor.fetchall()) == 0:
-        add_user = "insert into users (email, tokens_consumed) values (%s, 0)"
+        add_user = "insert into users (email, tokens_consumed, seconds_consumed) values (%s, 0, 0)"
         cursor.execute(add_user, (email,))
         cnx.commit()
 
@@ -35,3 +35,18 @@ def get_tokens(email):
     cursor.execute(query_tokens, (email,))
     current_tokens = cursor.fetchall()[0][0]
     return current_tokens
+
+def update_seconds(email, used_seconds):
+    query_seconds= ("select seconds_consumed from users where email = %s")
+    cursor.execute(query_seconds, (email,))
+    current_sec= cursor.fetchall()[0][0]
+    new_sec = current_sec + used_seconds
+    query = ("update users set seconds_consumed = %s")
+    cursor.execute(query, (new_sec,))
+    cnx.commit()
+
+def get_seconds(email):
+    query_seconds= ("select seconds_consumed from users where email = %s")
+    cursor.execute(query_seconds, (email,))
+    current_sec= cursor.fetchall()[0][0]
+    return current_sec
