@@ -1,4 +1,4 @@
-    import { append_messages } from './funcs.js';
+    import { append_messages, config_mediarecorder } from './funcs.js';
     let audioIN = { audio: true };
     //  audio is true, for recording
     let is_recording = false;
@@ -40,32 +40,7 @@
       .then(function (mediaStreamObj) {
 
         let mediaRecorder = new MediaRecorder(mediaStreamObj);
-        // Pass the audio stream
-
-        // Start event
-        start.addEventListener('click', function (ev) {
-          if (is_recording == false) {
-            mediaRecorder.start();
-            console.log("start");
-            is_recording = true;
-            start.innerHTML = "stop recording";
-            start.classList.remove("btn-success");
-            start.classList.add("btn-warning");
-          }
-          else {
-            mediaRecorder.stop();
-            console.log("stop");
-            is_recording = false;
-            start.innerHTML = "start recording";
-            wait_div.style.display = "block";
-            start.style.display="none";
-            start.classList.remove("btn-warning");
-            start.classList.add("btn-success");
-          }
-          
-          // console.log(mediaRecorder.state);
-        })
-
+        config_mediarecorder(start, mediaRecorder, wait_div, is_recording);
 
 
         // If audio data available then push
