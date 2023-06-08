@@ -5,7 +5,7 @@
     // the microphone
 
     let wait_div = document.getElementById('wait');
-    wait_div.style.display = "block";
+    wait_div.style.display = "none";
 
     // Start record
     let start = document.getElementById('btnStart');
@@ -17,21 +17,35 @@
      console.log("ended audio");
     });
 
-    fetch("/random", {
+    let job_div = document.getElementById("jobdiv");
+    let job_button = document.getElementById("jobbnt");
+    let job_text = document.getElementById("inputJob");
+
+    job_button.addEventListener('click', function (ev) {
+        job_div.style.display="none";
+        wait_div.style.display = "block";
+        let data = {
+            "job_position": job_text.value     
+        };
+        fetch("/job_interview_init", {
         method: "POST",
-        cache: "no-cache"
+        cache: "no-cache",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data),
       }).then(resp => resp.json()).then(data=>{ 
 
         conversation = document.getElementById("conversation");
         console.log(data)
-        audioSource.src = "/audio_random";
+        
+        audioSource.src = "/audio_job";
         audioSource.play();
         append_messages(data);
 
         wait_div.style.display = "none";
+        start.style.display = "block";
         
         });
-
+    });
     
 
     navigator.mediaDevices.getUserMedia(audioIN)
@@ -106,7 +120,7 @@
           formData.append("audio_file", audioData);
 
           // Send the form data to the server.
-          fetch("/chat", {
+          fetch("/job_interview", {
             method: "POST",
             cache: "no-cache",
             body: formData
@@ -122,9 +136,6 @@
             
             })
 
-          
-
-        
         }
       })
 

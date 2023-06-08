@@ -1,0 +1,28 @@
+<html>
+    {% include "header.html" %}
+    
+    <body>
+       <div class="btn_div">
+        <button id="btnStart" class="btn btn-success" style="display:none">start recording</button>
+        <div class="spinner-border text-primary" role="status" id="wait">
+          
+        </div>
+      </div>
+      <div class="form-group" id="jobdiv">
+        <label for="inputJob">Job Position</label>
+        <input type="text-primary" class="form-control jobitem" id="inputJob" placeholder="Enter job position">
+      <button id="jobbnt" class="btn btn-primary jobitem">Submit</button>
+      </div>
+      
+        
+      <div id="conversation"></div>
+      <audio id="audioPlayRnd" ></audio>
+      
+
+    </body>
+
+     <script src="{{url_for('static', filename='main_job.js')}}"></script>
+
+
+  </script>
+</html>

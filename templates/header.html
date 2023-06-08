@@ -15,7 +15,7 @@
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
                 <a class="nav-link disabled" href="#">{{username}}</a>
-              </li>
+                </li>
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Modes
@@ -23,8 +23,13 @@
                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <a class="dropdown-item" href="/free">Free Talk</a>
                   <a class="dropdown-item" href="/random">Random Topic</a>
+                  <a class="dropdown-item" href="/job_interview">Job Interview</a>
               </li>
-              <li class="nav-item">
+                <li class="nav-item active">
+                <a class="nav-link disabled" href="#">{{mode}}</a>
+                </li>
+                
+              <li class="nav-item" id="logoutitem">
                 <a class="nav-link" href="/logout">Logout</a>
               </li>
             </ul>
