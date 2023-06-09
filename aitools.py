@@ -1,12 +1,26 @@
-
 import openai
 import azure.cognitiveservices.speech as speechsdk
 import os
+import utils
+
+import tiktoken
+
+encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 speech_key = os.getenv("SPEECH_KEY")
 
 openai_key = os.getenv('OPENAI_KEY')
 openai.api_key = openai_key
+
+"""
+HELPERS
+"""
+def count_tokens(messages):
+    n = 0
+    for message in messages:
+        text = message["content"]
+        n += len(encoding.encode(text))
+    return n
 
 """
 AZURE FUNCTIONS
@@ -28,6 +42,7 @@ def speech_recognize_once_from_file(filename):
     result = speech_recognizer.recognize_once()
     # Check the result
     text = None
+    duration = utils.get_wav_duration(filename)
     if result.reason == speechsdk.ResultReason.RecognizedSpeech:
         #print("Recognized: {}".format(result.text))
         text = result.text
@@ -39,9 +54,10 @@ def speech_recognize_once_from_file(filename):
         if cancellation_details.reason == speechsdk.CancellationReason.Error:
             print("Error details: {}".format(cancellation_details.error_details))
     # </SpeechRecognitionWithFile>
-    return text
+    return text, duration
 
 def text_to_audio(path, text):
+
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioOutputConfig(filename=path)
     # The language of the voice that speaks.
@@ -55,7 +71,8 @@ def text_to_audio(path, text):
     #speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
     if speech_synthesis_result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         #print("Speech synthesized for text [{}]".format(text))
-        pass
+        duration = utils.get_wav_duration(path)
+        return duration
     elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
         cancellation_details = speech_synthesis_result.cancellation_details
         print("Speech synthesis canceled: {}".format(cancellation_details.reason))
@@ -78,7 +95,11 @@ def random_topic():
     
     interviewer = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1.4)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = interviewer["usage"]["total_tokens"]
+
+    return interviewer_message, n_tokens
 
 
 def free_talk(session_messages):
@@ -94,8 +115,11 @@ def free_talk(session_messages):
     messages = messages + session_messages
     assisstant = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=120, temperature = 1)
     assisstant_message = assisstant['choices'][0]['message']['content']
+
+    messages += [{"role": "assistant", "content": assisstant_message}]
+    n_tokens = assisstant["usage"]["total_tokens"]
     
-    return assisstant_message
+    return assisstant_message, n_tokens
     """
     messages.append({"role": "assistant", "content": interviewer_message})
     if len(messages) > max_messages:
@@ -112,7 +136,9 @@ def job_interview(position, session_messages):
         messages = [messages[0]] + session_messages
     interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = interviewer["usage"]["total_tokens"]
+    return interviewer_message, n_tokens
     """
     if len(messages) > max_messages:
         messages = [messages[0]] + messages[len(messages)-max_messages+1:len(messages)]
@@ -120,12 +146,15 @@ def job_interview(position, session_messages):
 
 def debate(session_messages):
     messages = [
-        {"role": "system", "content": f"This is a debate between you an the user. You have to suggest the topic, prefereable a controversial one. You have to disagree with the user."},
+        {"role": "system", "content": f"This is a debate between you an the user. You have to suggest the topic, prefereable a controversial one. You have to disagree with the user"},
         {"role": "assistant", "content": f"welcome to the debate, let's start"},
         {"role": "user", "content": f"what topic do you want to debate about?"}
     ]
     if len(session_messages) > 0:
         messages = [messages[0]] + session_messages
-    interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
+    interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=90)
     interviewer_message = interviewer['choices'][0]['message']['content']
-    return interviewer_message
+
+    messages += [{"role": "assistant", "content": interviewer_message}]
+    n_tokens = interviewer["usage"]["total_tokens"]
+    return interviewer_message, n_tokens

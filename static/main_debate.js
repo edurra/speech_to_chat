@@ -1,4 +1,4 @@
-    import { append_messages, config_mediarecorder } from './funcs.js';
+    import { append_messages, config_mediarecorder, update_tokens } from './funcs.js';
     let audioIN = { audio: true };
     //  audio is true, for recording
     let is_recording = false;
@@ -18,6 +18,7 @@
      console.log("ended audio");
     });
 
+    update_tokens();
     fetch("/debate_init", {
         method: "POST",
         cache: "no-cache"
@@ -52,6 +53,7 @@
 
         mediaRecorder.ondataavailable = function (ev) {
           dataArray.push(ev.data);
+          
           console.log("dataArray push");
           //console.log(dataArray);
         }

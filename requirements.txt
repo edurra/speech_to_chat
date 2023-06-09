@@ -3,3 +3,5 @@ flask
 azure-cognitiveservices-speech
 Authlib
 requests
+mysql-conector-python
+tiktoken

@@ -6,7 +6,8 @@ import uuid
 import requests
 import subprocess
 import aitools
-
+import dbutils
+import utils
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 
@@ -45,6 +46,14 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def payment_required(f):
+    @wraps(f)
+    def decorated_function_payment(*args, **kwargs):
+        if not validate_payment(session.get("google_token").get("userinfo").get("email")):
+            return redirect(url_for('profile', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function_payment
+
 def validate_token(token):
     if token == None:
         return False
@@ -57,6 +66,11 @@ def validate_token(token):
         else:
             return False
 
+def validate_payment(email):
+    seconds_consumed = dbutils.get_seconds(email)
+    seconds_purchased = dbutils.get_purchased_seconds(email)
+    return seconds_purchased > seconds_consumed
+
 def generate(path):
     with open(path, "rb") as fwav:
         data = fwav.read(1024)
@@ -66,13 +80,16 @@ def generate(path):
 
     os.remove(path)
 
+
+
 """
 ROUTES
 """
 
 @app.route('/free', methods = ['POST', 'GET'])
 @login_required
-def index():
+@payment_required
+def free():
     if request.method == 'GET':
         session["messages"] = []
         session["count"] = 0
@@ -80,12 +97,11 @@ def index():
 
 @app.route('/chat', methods = ['POST', 'GET'])
 @login_required
+@payment_required
 def chat(max_messages = 7):
     if request.method == 'POST':
         
         session["count"] += 1
-        print("post received")
-        print(request)
         
         audio_file = request.files['audio_file']
         identif = str(uuid.uuid4())
@@ -93,11 +109,15 @@ def chat(max_messages = 7):
         audio_file.save(file_path)
         file_path_wav = "tmp/" + identif + ".wav"
         subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        text = aitools.speech_recognize_once_from_file(file_path_wav)
+        text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+        dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
         os.remove(file_path)
         os.remove(file_path_wav)
         session["messages"].append({"role": "user", "content": text})
-        assistant_response = aitools.free_talk(session["messages"])
+
+        assistant_response, used_tokens = aitools.free_talk(session["messages"])
+        dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
+
         session["messages"].append({"role": "assistant", "content": assistant_response})
 
         if len(session["messages"]) > max_messages:
@@ -109,12 +129,14 @@ def chat(max_messages = 7):
 
 @app.route('/random', methods = ['POST', 'GET'])
 @login_required
+@payment_required
 def random():
     if request.method == 'POST':
         
         session["count"] += 1
 
-        assistant_message = aitools.random_topic()
+        assistant_message, used_tokens = aitools.random_topic()
+        dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
         session["messages"].append({"role": "assistant", "content": assistant_message})
 
         
@@ -130,12 +152,14 @@ def random():
 @app.route('/debate', methods = ['POST', 'GET'])
 @app.route('/debate_init', methods = ['POST', 'GET'])
 @login_required
+@payment_required
 def debate(max_messages=7):
     if request.method == 'POST':
         if request.path == "/debate_init":
             session["count"] += 1
 
-            assistant_message = aitools.debate(session["messages"])
+            assistant_message, used_tokens= aitools.debate(session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_message})
             return json.dumps(session["messages"])
         
@@ -148,13 +172,14 @@ def debate(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
             os.remove(file_path)
             os.remove(file_path_wav)
             session["messages"].append({"role": "user", "content": text})
-            assistant_response = aitools.debate(session["messages"])
+            assistant_response, used_tokens = aitools.debate(session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_response})
-            print(session["messages"])
             if len(session["messages"]) > max_messages:
                 session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
         
@@ -169,6 +194,7 @@ def debate(max_messages=7):
 @app.route('/job_interview', methods = ['POST', 'GET'])
 @app.route('/job_interview_init', methods = ['POST', 'GET'])
 @login_required
+@payment_required
 def job_interview(max_messages=7):
     if request.method == 'POST':
         """
@@ -186,14 +212,14 @@ def job_interview(max_messages=7):
             session["job_position"] = job_position
             session["count"] += 1
 
-            interviewer_message = aitools.job_interview(job_position, session["messages"])
+            interviewer_message, used_tokens = aitools.job_interview(job_position, session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": interviewer_message})
             return json.dumps(session["messages"])
         
         if request.path == "/job_interview":
             session["count"] += 1
-            print("post received")
-            print(request)
+
             
             audio_file = request.files['audio_file']
             identif = str(uuid.uuid4())
@@ -201,11 +227,14 @@ def job_interview(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
+
             os.remove(file_path)
             os.remove(file_path_wav)
             session["messages"].append({"role": "user", "content": text})
-            assistant_response = aitools.job_interview(session["job_position"], session["messages"])
+            assistant_response, used_tokens = aitools.job_interview(session["job_position"], session["messages"])
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_response})
 
             if len(session["messages"]) > max_messages:
@@ -234,29 +263,65 @@ def home():
 @app.route('/audio_job', methods = ['POST', 'GET'])
 @app.route('/audio_debate', methods = ['POST', 'GET'])
 @login_required
+@payment_required
 def audio():
     if request.method == 'GET':
-        print("get received")
-        print(request)
+
         #print(session["messages"])
         text = session["messages"][len(session["messages"])-1]["content"]
         identif = str(uuid.uuid4())
         file_path = "tmp/" + identif + ".wav"
         #file_path = "tmp/test2.wav"
-        aitools.text_to_audio(file_path, text)
+        duration = aitools.text_to_audio(file_path, text)
+        dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
 
         response = Response(generate(file_path), mimetype="audio/x-wav")
         
         return response
 
 
+@app.route('/profile',methods = ['GET'])
+@login_required
+def profile():
+    if request.method == 'GET':
+        current_sec = dbutils.get_seconds(session["google_token"]["userinfo"]["email"])
+        purchased_sec = dbutils.get_purchased_seconds(session["google_token"]["userinfo"]["email"])
+        seconds_left = purchased_sec - current_sec
+        hours, minutes, seconds = utils.get_time(current_sec)
+        hours_l, minutes_l, seconds_l = utils.get_time(seconds_left)
+        return render_template('profile.html', title='Welcome',  seconds=seconds, minutes=minutes, hours=hours, seconds_l=seconds_l, minutes_l=minutes_l, hours_l=hours_l, username=session["google_token"]["userinfo"]["given_name"])  
+
+@app.route('/purchase',methods = ['POST'])
+@login_required
+def purchase():
+    if request.method == 'POST':
+        dbutils.new_payment(session["google_token"]["userinfo"]["email"],str(uuid.uuid4()), 5.0, 3600)
+        return redirect(url_for("profile"))
+
+"""
+@app.route('/tokens_consumed',methods = ['GET'])
+@login_required
+def n_tokens():
+    if request.method == 'GET':
+        current_tokens = dbutils.get_tokens(session["google_token"]["userinfo"]["email"])
+
+        return {"tokens": current_tokens}
+
+@app.route('/time_consumed',methods = ['GET'])
+@login_required
+def n_seconds():
+    if request.method == 'GET':
+        current_sec = dbutils.get_seconds(session["google_token"]["userinfo"]["email"])
+
+        return {"tokens": current_sec}
+"""
 
 @app.route('/login/')
 def google():
 
     # Redirect to google_auth function
     redirect_uri = url_for('google_auth', _external=True)
-    print(redirect_uri)
+
     return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route('/logout/')
@@ -272,6 +337,10 @@ def google_auth():
     #print(" Google User ", user)
     #print(oauth.google.get(token))
     session['google_token'] = token
+
+    
+    dbutils.login_user(token["userinfo"]["email"])
+
     return redirect('/free')
 
 if __name__ == "__main__":

@@ -1,0 +1,18 @@
+<html>
+    {% include "header.html" %}
+    
+    <body>
+      <div id="profilecontainer">
+        <div><h1>{{username}} </h1></div>
+        <div> Time consumed: {{hours}} hours {{minutes}} minutes {{seconds}} seconds</div>
+        <div> Time left: {{hours_l}} hours {{minutes_l}} minutes {{seconds_l}} seconds</div>
+        <form action="/purchase" method="post">
+
+        <button type="submit" class="btn btn-primary" >Purchase 1 h</button>
+      </form>
+            </div>
+
+    </body>
+
+  </script>
+</html>
