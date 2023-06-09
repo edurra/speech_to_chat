@@ -1,5 +1,7 @@
 import mysql.connector
 import os
+import uuid
+import time    
 
 
 mysql_user = os.getenv('MYSQL_USER')
@@ -10,8 +12,12 @@ cnx = mysql.connector.connect(user=mysql_user, password=mysql_pass,
                               host=mysql_host,
                               database='app')
 
+
 cursor = cnx.cursor()
 
+"""
+USERS TABLE
+"""
 def login_user(email):
     query = ("select email from users where email = %s")
     cursor.execute(query, (email,))
@@ -50,3 +56,29 @@ def get_seconds(email):
     cursor.execute(query_seconds, (email,))
     current_sec= cursor.fetchall()[0][0]
     return current_sec
+
+def get_purchased_seconds(email):
+    query_seconds= ("select seconds_purchased from users where email = %s")
+    cursor.execute(query_seconds, (email,))
+    current_sec= cursor.fetchall()[0][0]
+    return current_sec
+
+def update_purchased_seconds(email, purchased_seconds):
+    query_seconds = ("select seconds_purchased from users where email = %s")
+    cursor.execute(query_seconds, (email,))
+    current_sec = cursor.fetchall()[0][0]
+    new_seconds = current_sec + purchased_seconds
+    query = ("update users set seconds_purchased = %s")
+    cursor.execute(query, (new_seconds,))
+    cnx.commit()
+
+"""
+PAYMENTS TABLE
+"""
+
+def new_payment(email, payment_id, amount, seconds):
+    update_purchased_seconds(email, seconds)
+    query = ("insert into payments (id, email, date, amount) values (%s, %s, %s, %s)")
+    date = time.strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute(query, (payment_id, email, date, amount))
+    cnx.commit()

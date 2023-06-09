@@ -97,7 +97,7 @@ def random_topic():
     interviewer_message = interviewer['choices'][0]['message']['content']
 
     messages += [{"role": "assistant", "content": interviewer_message}]
-    n_tokens = count_tokens(messages)
+    n_tokens = interviewer["usage"]["total_tokens"]
 
     return interviewer_message, n_tokens
 
@@ -117,7 +117,7 @@ def free_talk(session_messages):
     assisstant_message = assisstant['choices'][0]['message']['content']
 
     messages += [{"role": "assistant", "content": assisstant_message}]
-    n_tokens = count_tokens(messages)
+    n_tokens = assisstant["usage"]["total_tokens"]
     
     return assisstant_message, n_tokens
     """
@@ -137,7 +137,7 @@ def job_interview(position, session_messages):
     interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
     interviewer_message = interviewer['choices'][0]['message']['content']
     messages += [{"role": "assistant", "content": interviewer_message}]
-    n_tokens = count_tokens(messages)
+    n_tokens = interviewer["usage"]["total_tokens"]
     return interviewer_message, n_tokens
     """
     if len(messages) > max_messages:
@@ -146,16 +146,15 @@ def job_interview(position, session_messages):
 
 def debate(session_messages):
     messages = [
-        {"role": "system", "content": f"This is a debate between you an the user. You have to suggest the topic, prefereable a controversial one. You have to disagree with the user."},
+        {"role": "system", "content": f"This is a debate between you an the user. You have to suggest the topic, prefereable a controversial one. You have to disagree with the user"},
         {"role": "assistant", "content": f"welcome to the debate, let's start"},
         {"role": "user", "content": f"what topic do you want to debate about?"}
     ]
     if len(session_messages) > 0:
         messages = [messages[0]] + session_messages
-    interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=80)
+    interviewer = openai.ChatCompletion.create(model = "gpt-3.5-turbo", messages = messages, max_tokens=90)
     interviewer_message = interviewer['choices'][0]['message']['content']
 
     messages += [{"role": "assistant", "content": interviewer_message}]
-    n_tokens = count_tokens(messages)
-
+    n_tokens = interviewer["usage"]["total_tokens"]
     return interviewer_message, n_tokens
