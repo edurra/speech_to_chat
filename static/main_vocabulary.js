@@ -11,25 +11,18 @@
     // Start record
     let start = document.getElementById('btnStart');
 
-    let audioSource = document.getElementById("audioPlayRnd");
-    audioSource.addEventListener("ended", function(){
-     audioSource.currentTime = 0;
-     start.style.display="block";
-     console.log("ended audio");
-    });
 
-    //update_tokens();
-    fetch("/debate_init", {
+
+    fetch("/vocabulary_word", {
         method: "POST",
         cache: "no-cache"
       }).then(resp => resp.json()).then(data=>{ 
 
-        console.log(data)
-        audioSource.src = "/audio_debate";
-        audioSource.play();
+        console.log(data);
         append_messages(data);
 
         wait_div.style.display = "none";
+        start.style.display="block";
         
         });
 
@@ -53,7 +46,6 @@
 
         mediaRecorder.ondataavailable = function (ev) {
           dataArray.push(ev.data);
-          
           console.log("dataArray push");
           //console.log(dataArray);
         }
@@ -83,7 +75,7 @@
           formData.append("audio_file", audioData);
 
           // Send the form data to the server.
-          fetch("/debate", {
+          fetch("/vocabulary_feedback", {
             method: "POST",
             cache: "no-cache",
             body: formData
@@ -93,11 +85,10 @@
             console.log(data)
             append_messages(data);
             
-            audioSource.src = "/audio_debate";
-            audioSource.play();
             wait_div.style.display = "none";
+            start.style.display="block";
             
-            })
+            });
 
           
 
