@@ -334,7 +334,7 @@ def audio():
         identif = str(uuid.uuid4())
         file_path_wav = "tmp/" + identif + ".wav"
         #file_path_mp3 = "tmp/" + identif + ".mp3"
-        duration = aitools.text_to_audio(file_path_wav, text)
+        duration = aitools.text_to_wav(file_path_wav, text)
         #subprocess.run(["ffmpeg", "-i", file_path_mp3, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         
 

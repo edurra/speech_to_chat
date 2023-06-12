@@ -6,6 +6,7 @@ import subprocess
 from gtts import gTTS
 import tiktoken
 import whisper
+import google.cloud.texttospeech as tts
 
 model = whisper.load_model("base")
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -98,6 +99,31 @@ def text_to_audio(path, text):
     ob=gTTS(text=text, lang='en', slow=False)
     ob.save(path)
     """
+
+"""
+GOOGLE CLOUD FUNCTIONS
+"""
+def text_to_wav(path, text):
+    voice_name = "en-US-Standard-A"
+    language_code = "-".join(voice_name.split("-")[:2])
+    text_input = tts.SynthesisInput(text=text)
+    voice_params = tts.VoiceSelectionParams(
+        language_code=language_code, name=voice_name
+    )
+    audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
+
+    client = tts.TextToSpeechClient()
+    response = client.synthesize_speech(
+        input=text_input,
+        voice=voice_params,
+        audio_config=audio_config,
+    )
+
+    with open(path, "wb") as out:
+        out.write(response.audio_content)
+    
+    duration = utils.get_wav_duration(path)
+    return duration
 
 """
 OPENAI FUNCTIONS
