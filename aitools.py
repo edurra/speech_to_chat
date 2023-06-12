@@ -70,7 +70,7 @@ def speech_recognize_once_from_file(filename):
     return text, duration
 
 def text_to_audio(path, text):
-    """
+    
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioOutputConfig(filename=path)
     # The language of the voice that speaks.
@@ -78,14 +78,14 @@ def text_to_audio(path, text):
     speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
     
     #ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="es-ES"><voice name="es-ES-DarioNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
-
+    duration = 0
     ssml_text = f'<speak version="1.0" xmlns="https://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US"><voice name="en-US-JennyNeural"><mstts:express-as style="chat">{text}</mstts:express-as></voice></speak>'
     speech_synthesis_result = speech_synthesizer.speak_ssml_async(ssml_text).get()
     #speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
     if speech_synthesis_result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         #print("Speech synthesized for text [{}]".format(text))
         duration = utils.get_wav_duration(path)
-        return duration
+        
     elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
         cancellation_details = speech_synthesis_result.cancellation_details
         print("Speech synthesis canceled: {}".format(cancellation_details.reason))
@@ -93,10 +93,11 @@ def text_to_audio(path, text):
             if cancellation_details.error_details:
                 print("Error details: {}".format(cancellation_details.error_details))
                 print("Did you set the speech resource key and region values?")
+    return duration
     """
     ob=gTTS(text=text, lang='en', slow=False)
     ob.save(path)
-
+    """
 
 """
 OPENAI FUNCTIONS

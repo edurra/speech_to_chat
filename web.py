@@ -333,14 +333,15 @@ def audio():
         text = session["messages"][len(session["messages"])-1]["content"]
         identif = str(uuid.uuid4())
         file_path_wav = "tmp/" + identif + ".wav"
-        file_path_mp3 = "tmp/" + identif + ".mp3"
-        duration = aitools.text_to_audio(file_path_mp3, text)
-        subprocess.run(["ffmpeg", "-i", file_path_mp3, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        duration = utils.get_wav_duration(file_path_wav)
-        os.remove(file_path_wav)
+        #file_path_mp3 = "tmp/" + identif + ".mp3"
+        duration = aitools.text_to_audio(file_path_wav, text)
+        #subprocess.run(["ffmpeg", "-i", file_path_mp3, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        
+
+        #os.remove(file_path_wav)
         dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
 
-        response = Response(generate(file_path_mp3), mimetype="audio/mp3")
+        response = Response(generate(file_path_wav), mimetype="audio/x-wav")
         
         return response
 
