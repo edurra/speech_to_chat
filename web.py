@@ -113,6 +113,7 @@ def chat(max_messages = 7):
         dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
         os.remove(file_path)
         os.remove(file_path_wav)
+        #os.remove(identif+"vol.wav")
         session["messages"].append({"role": "user", "content": text})
 
         assistant_response, used_tokens = aitools.free_talk(session["messages"])
@@ -123,8 +124,10 @@ def chat(max_messages = 7):
         if len(session["messages"]) > max_messages:
             session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
         
-        return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
-        
+        suggestion, sug_tokens = aitools.suggestion(text)
+
+        response = {"messages": session["messages"][len(session["messages"])-2:len(session["messages"])], "suggestion": suggestion}
+        return json.dumps(response)
         #return json.dumps([{"a": "b"}])
 
 @app.route('/random', methods = ['POST', 'GET'])
@@ -139,15 +142,60 @@ def random():
         dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
         session["messages"].append({"role": "assistant", "content": assistant_message})
 
+        return json.dumps({"messages": session["messages"], "suggestion": ""})
         
-        return json.dumps(session["messages"])
-        
-        #return [{"a":"b"}]
+        #return {"messages": [{"a":"b"}], "sugestion": "aaabbb"}
     if request.method == 'GET':
         
         session["messages"] = []
         session["count"] = 0
         return render_template('random.html', title='Welcome', mode="Random Topic Mode", username=session["google_token"]["userinfo"]["given_name"])
+
+@app.route('/vocabulary_word', methods = ['POST', 'GET'])
+@app.route('/vocabulary_feedback', methods = ['POST', 'GET'])
+@login_required
+@payment_required
+def vocabulary():
+    if request.method == 'POST':
+        if request.path == "/vocabulary_word":
+            session["count"] += 1
+
+            assistant_message, used_tokens= aitools.random_word()
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
+            
+            session["word"] = assistant_message
+            return json.dumps({"messages": [{"role": "assistant", "content": assistant_message}], "suggestion": ""})
+        
+
+        if request.path == "/vocabulary_feedback":
+            session["count"] += 1
+            audio_file = request.files['audio_file']
+            identif = str(uuid.uuid4())
+            file_path = "tmp/" + identif + ".mp3"
+            audio_file.save(file_path)
+            file_path_wav = "tmp/" + identif + ".wav"
+            subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
+            os.remove(file_path)
+            os.remove(file_path_wav)
+            #os.remove(identif+"vol.wav")
+            new_word, used_tokens = aitools.random_word()
+
+            dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
+            
+            suggestion, sug_tokens = aitools.random_word_feedback(session["word"], text)
+            messages = [{"role": "user", "content": text}, {"role": "assistant", "content": new_word}]
+            session["word"] = new_word
+            response = {"messages": messages, "suggestion": suggestion}
+            return json.dumps(response)
+        #return [{"a":"b"}]
+    if request.method == 'GET':
+        
+        session["messages"] = []
+        session["word"] = ""
+        session["count"] = 0
+        return render_template('random_word.html', title='Welcome', mode="Debate Mode", username=session["google_token"]["userinfo"]["given_name"])
 
 @app.route('/debate', methods = ['POST', 'GET'])
 @app.route('/debate_init', methods = ['POST', 'GET'])
@@ -161,7 +209,7 @@ def debate(max_messages=7):
             assistant_message, used_tokens= aitools.debate(session["messages"])
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_message})
-            return json.dumps(session["messages"])
+            return json.dumps({"messages": session["messages"], "suggestion": ""})
         
 
         if request.path == "/debate":
@@ -176,14 +224,18 @@ def debate(max_messages=7):
             dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
             os.remove(file_path)
             os.remove(file_path_wav)
+            #os.remove(identif+"vol"+".wav")
             session["messages"].append({"role": "user", "content": text})
             assistant_response, used_tokens = aitools.debate(session["messages"])
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": assistant_response})
             if len(session["messages"]) > max_messages:
                 session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
-        
-            return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+            
+            suggestion, sug_tokens = aitools.suggestion(text)
+
+            response = {"messages": session["messages"][len(session["messages"])-2:len(session["messages"])], "suggestion": suggestion}
+            return json.dumps(response)
         #return [{"a":"b"}]
     if request.method == 'GET':
         
@@ -215,7 +267,7 @@ def job_interview(max_messages=7):
             interviewer_message, used_tokens = aitools.job_interview(job_position, session["messages"])
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             session["messages"].append({"role": "assistant", "content": interviewer_message})
-            return json.dumps(session["messages"])
+            return json.dumps({"messages": session["messages"], "suggestion": ""})
         
         if request.path == "/job_interview":
             session["count"] += 1
@@ -232,6 +284,7 @@ def job_interview(max_messages=7):
 
             os.remove(file_path)
             os.remove(file_path_wav)
+            #os.remove(identif+"vol.wav")
             session["messages"].append({"role": "user", "content": text})
             assistant_response, used_tokens = aitools.job_interview(session["job_position"], session["messages"])
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
@@ -240,7 +293,10 @@ def job_interview(max_messages=7):
             if len(session["messages"]) > max_messages:
                 session["messages"] =  session["messages"][len(session["messages"]) - max_messages + 1:len(session["messages"])]
         
-            return json.dumps(session["messages"][len(session["messages"])-2:len(session["messages"])])
+            suggestion, sug_tokens = aitools.suggestion(text)
+
+            response = {"messages": session["messages"][len(session["messages"])-2:len(session["messages"])], "suggestion": suggestion}
+            return json.dumps(response)
 
     if request.method == 'GET':
         session["job_position"] = ""

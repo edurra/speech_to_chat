@@ -2,7 +2,7 @@ import openai
 import azure.cognitiveservices.speech as speechsdk
 import os
 import utils
-
+import subprocess
 import tiktoken
 
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -28,6 +28,8 @@ AZURE FUNCTIONS
 def speech_recognize_once_from_file(filename):
     """performs one-shot speech recognition with input from an audio file"""
     # <SpeechRecognitionWithFile>
+    name = filename.split(".") 
+    #subprocess.run(["ffmpeg", "-i", filename, "-af", "volume=7", "-vcodec", "copy", name[0]+"vol"+"."+name[1]], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioConfig(filename=filename)
     # Creates a speech recognizer using a file as audio input, also specify the speech language
@@ -158,3 +160,49 @@ def debate(session_messages):
     messages += [{"role": "assistant", "content": interviewer_message}]
     n_tokens = interviewer["usage"]["total_tokens"]
     return interviewer_message, n_tokens
+
+def suggestion(text):
+    initial_message =  f"Give feedback about how natural a sentence is. If it is not natural, suggest one or two alternatives. Give short responses."
+    messages = [
+        {"role": "system",
+         "content": initial_message},
+        {"role": "user",
+         "content": f"The text to evaluate is: '{text}'"}
+    ]
+    
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1)
+    suggestion = response['choices'][0]['message']['content']
+
+    n_tokens = response["usage"]["total_tokens"]
+
+    return suggestion, n_tokens
+
+def random_word():
+    initial_message =  f"Give just a random word or idiom."
+    messages = [
+        {"role": "system",
+         "content": initial_message}
+    ]
+    
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1.5)
+    word = response['choices'][0]['message']['content']
+
+    n_tokens = response["usage"]["total_tokens"]
+
+    return word, n_tokens
+
+def random_word_feedback(word, text):
+    initial_message =  f"Give feedback about good the description of the word or idiom '{word}' is and describe it if it is not good. Give short answers"
+    messages = [
+        {"role": "system",
+         "content": initial_message},
+        {"role": "user",
+         "content": f"{text}"}
+    ]
+    
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, max_tokens=70, temperature = 1)
+    suggestion = response['choices'][0]['message']['content']
+
+    n_tokens = response["usage"]["total_tokens"]
+
+    return suggestion, n_tokens

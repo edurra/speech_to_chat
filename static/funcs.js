@@ -1,7 +1,12 @@
 export {append_messages, config_mediarecorder, update_tokens};
 
+$(function () {
+  $('[data-toggle="popover"]').popover()
+})
+
 function append_messages(data) {
-  for (let i = 0; i<data.length; i++) {
+  $('[data-toggle="popover"]').popover('hide');
+  for (let i = 0; i<data["messages"].length; i++) {
     var container = document.createElement('div');
     container.classList.add("containerconv");
     document.getElementById('conversation').appendChild(container);
@@ -12,23 +17,40 @@ function append_messages(data) {
     
 
     var node = document.createElement('span');
-    node.appendChild(document.createTextNode(data[i]["content"]));
+    node.appendChild(document.createTextNode(data["messages"][i]["content"]));
     
     node.classList.add("convtext");
     node.classList.add("alert");
-    if (data[i]["role"]=="user"){
+    if (data["messages"][i]["role"]=="user"){
       node.classList.add("alert-success");
       nodeimg.src = "/static/images/user.png";
       nodeimg.classList.add("user");
+
+      var sug_div = document.createElement("div");
+      var sug = document.createElement('span');
+      sug.setAttribute("data-toggle", "popover");
+      sug.setAttribute("data-content", data["suggestion"]);
+      sug.setAttribute("data-placement", "left");
+      sug.classList.add("sug_span");
+      sug.innerText = "suggestion";
+      let sug_id = Math.floor(Math.random() * 10000000).toString();
+      sug.id = sug_id;
+      sug_div.appendChild(sug);
+      container.appendChild(sug_div);
+      $('#'+sug_id).popover("show");
+
       }
     else {
         node.classList.add("alert-info");
         nodeimg.src = "/static/images/logo.jpeg";
         nodeimg.classList.add("logo");
+              
       };
     container.appendChild(nodeimg);
     container.appendChild(node);
+    
   };
+
 }
 
 function config_mediarecorder(start, mediaRecorder, wait_div, is_recording) {

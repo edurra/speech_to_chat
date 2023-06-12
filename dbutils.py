@@ -12,7 +12,7 @@ cnx = mysql.connector.connect(user=mysql_user, password=mysql_pass,
                               host=mysql_host,
                               database='app')
 
-
+cnx.start_transaction(isolation_level='READ COMMITTED')
 cursor = cnx.cursor()
 
 """
