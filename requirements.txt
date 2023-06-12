@@ -5,3 +5,6 @@ Authlib
 requests
 mysql-conector-python
 tiktoken
+gtts
+openai-whisper
+mutagen

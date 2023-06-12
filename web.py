@@ -109,11 +109,10 @@ def chat(max_messages = 7):
         audio_file.save(file_path)
         file_path_wav = "tmp/" + identif + ".wav"
         subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+        text, duration = aitools.speech_recognize_once_from_file(file_path)
         dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
         os.remove(file_path)
         os.remove(file_path_wav)
-        #os.remove(identif+"vol.wav")
         session["messages"].append({"role": "user", "content": text})
 
         assistant_response, used_tokens = aitools.free_talk(session["messages"])
@@ -164,6 +163,7 @@ def vocabulary():
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
             
             session["word"] = assistant_message
+            session["messages"] = [{"role": "assistant", "content": assistant_message}]
             return json.dumps({"messages": [{"role": "assistant", "content": assistant_message}], "suggestion": ""})
         
 
@@ -175,18 +175,23 @@ def vocabulary():
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path)
             dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
             os.remove(file_path)
             os.remove(file_path_wav)
             #os.remove(identif+"vol.wav")
+            """
             new_word, used_tokens = aitools.random_word()
 
             dbutils.update_tokens(session["google_token"]["userinfo"]["email"], used_tokens)
-            
+            """
             suggestion, sug_tokens = aitools.random_word_feedback(session["word"], text)
+            messages = [{"role": "user", "content": text}]
+            """
             messages = [{"role": "user", "content": text}, {"role": "assistant", "content": new_word}]
             session["word"] = new_word
+            session["messages"] = [{"role": "assistant", "content": new_word}]
+            """
             response = {"messages": messages, "suggestion": suggestion}
             return json.dumps(response)
         #return [{"a":"b"}]
@@ -220,7 +225,7 @@ def debate(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path)
             dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
             os.remove(file_path)
             os.remove(file_path_wav)
@@ -279,7 +284,7 @@ def job_interview(max_messages=7):
             audio_file.save(file_path)
             file_path_wav = "tmp/" + identif + ".wav"
             subprocess.run(["ffmpeg", "-i", file_path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            text, duration = aitools.speech_recognize_once_from_file(file_path_wav)
+            text, duration = aitools.speech_recognize_once_from_file(file_path)
             dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
 
             os.remove(file_path)
@@ -318,6 +323,7 @@ def home():
 @app.route('/audio_random', methods = ['POST', 'GET'])
 @app.route('/audio_job', methods = ['POST', 'GET'])
 @app.route('/audio_debate', methods = ['POST', 'GET'])
+@app.route('/audio_vocabulary', methods = ['POST', 'GET'])
 @login_required
 @payment_required
 def audio():
@@ -326,12 +332,15 @@ def audio():
         #print(session["messages"])
         text = session["messages"][len(session["messages"])-1]["content"]
         identif = str(uuid.uuid4())
-        file_path = "tmp/" + identif + ".wav"
-        #file_path = "tmp/test2.wav"
-        duration = aitools.text_to_audio(file_path, text)
+        file_path_wav = "tmp/" + identif + ".wav"
+        file_path_mp3 = "tmp/" + identif + ".mp3"
+        duration = aitools.text_to_audio(file_path_mp3, text)
+        subprocess.run(["ffmpeg", "-i", file_path_mp3, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        duration = utils.get_wav_duration(file_path_wav)
+        os.remove(file_path_wav)
         dbutils.update_seconds(session["google_token"]["userinfo"]["email"], duration)
 
-        response = Response(generate(file_path), mimetype="audio/x-wav")
+        response = Response(generate(file_path_mp3), mimetype="audio/mp3")
         
         return response
 

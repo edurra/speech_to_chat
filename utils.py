@@ -1,6 +1,8 @@
 import wave
+from mutagen.mp3 import MP3
 import contextlib
 import math
+import subprocess
 
 def get_wav_duration(path):
 	with contextlib.closing(wave.open(path,'r')) as f:
@@ -8,6 +10,16 @@ def get_wav_duration(path):
 	    rate = f.getframerate()
 	    duration = frames / float(rate)
 	return duration
+
+"""
+def get_mp3_duration(path):
+	name = path.split(".")[0]
+	file_path_wav = name + ".wav"
+	subprocess.run(["ffmpeg", "-i", path, file_path_wav], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+	duration = get_wav_duration(file_path_wav)
+	os.remove(file_path_wav)
+	return duration
+"""
 
 def get_time(seconds):
 	hours = 0

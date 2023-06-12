@@ -10,8 +10,14 @@
 
     // Start record
     let start = document.getElementById('btnStart');
+    let btn_new = document.getElementById('btnNew');
 
-
+    let audioSource = document.getElementById("audioPlay");
+    audioSource.addEventListener("ended", function(){
+     audioSource.currentTime = 0;
+     start.style.display="block";
+     console.log("ended audio");
+    });
 
     fetch("/vocabulary_word", {
         method: "POST",
@@ -19,6 +25,8 @@
       }).then(resp => resp.json()).then(data=>{ 
 
         console.log(data);
+        audioSource.src = "/audio_vocabulary";
+        audioSource.play();
         append_messages(data);
 
         wait_div.style.display = "none";
@@ -26,7 +34,24 @@
         
         });
 
-    
+    btn_new.onclick = function() {
+      btn_new.style.display="none";
+      wait_div.style.display = "block";
+      fetch("/vocabulary_word", {
+        method: "POST",
+        cache: "no-cache"
+      }).then(resp => resp.json()).then(data=>{ 
+
+        console.log(data);
+        audioSource.src = "/audio_vocabulary";
+        audioSource.play();
+        append_messages(data);
+
+        wait_div.style.display = "none";
+        start.style.display="block";
+        
+        });
+    };
 
     navigator.mediaDevices.getUserMedia(audioIN)
 
@@ -84,13 +109,11 @@
             //conversation = document.getElementById("conversation");
             console.log(data)
             append_messages(data);
-            
+            //audioSource.src = "/audio_vocabulary";
             wait_div.style.display = "none";
-            start.style.display="block";
+            btn_new.style.display="block";
             
             });
-
-          
 
         
         }

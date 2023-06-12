@@ -32,7 +32,7 @@ function append_messages(data) {
       sug.setAttribute("data-content", data["suggestion"]);
       sug.setAttribute("data-placement", "left");
       sug.classList.add("sug_span");
-      sug.innerText = "suggestion";
+      sug.innerText = "Evaluation";
       let sug_id = Math.floor(Math.random() * 10000000).toString();
       sug.id = sug_id;
       sug_div.appendChild(sug);

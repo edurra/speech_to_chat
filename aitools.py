@@ -3,8 +3,11 @@ import azure.cognitiveservices.speech as speechsdk
 import os
 import utils
 import subprocess
+from gtts import gTTS
 import tiktoken
+import whisper
 
+model = whisper.load_model("base")
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 speech_key = os.getenv("SPEECH_KEY")
@@ -28,7 +31,9 @@ AZURE FUNCTIONS
 def speech_recognize_once_from_file(filename):
     """performs one-shot speech recognition with input from an audio file"""
     # <SpeechRecognitionWithFile>
+    """
     name = filename.split(".") 
+
     #subprocess.run(["ffmpeg", "-i", filename, "-af", "volume=7", "-vcodec", "copy", name[0]+"vol"+"."+name[1]], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioConfig(filename=filename)
@@ -56,10 +61,16 @@ def speech_recognize_once_from_file(filename):
         if cancellation_details.reason == speechsdk.CancellationReason.Error:
             print("Error details: {}".format(cancellation_details.error_details))
     # </SpeechRecognitionWithFile>
+    """
+    name = filename.split(".")[0]
+    file_path_wav = name + ".wav"
+    result = model.transcribe(filename)
+    text = result["text"]
+    duration = utils.get_wav_duration(file_path_wav)
     return text, duration
 
 def text_to_audio(path, text):
-
+    """
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region="westeurope")
     audio_config = speechsdk.audio.AudioOutputConfig(filename=path)
     # The language of the voice that speaks.
@@ -82,6 +93,10 @@ def text_to_audio(path, text):
             if cancellation_details.error_details:
                 print("Error details: {}".format(cancellation_details.error_details))
                 print("Did you set the speech resource key and region values?")
+    """
+    ob=gTTS(text=text, lang='en', slow=False)
+    ob.save(path)
+
 
 """
 OPENAI FUNCTIONS
